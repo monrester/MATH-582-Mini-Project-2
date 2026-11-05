@@ -1,0 +1,13 @@
+import glob, os
+import pandas as pd
+import kagglehub
+
+data_path = kagglehub.dataset_download("data_link")
+csv_file = sorted(glob.glob(os.path.join(data_path, "**", "*.csv"), recursive=True))[0]
+df = pd.read_csv(csv_file)
+
+print(csv_file, df.shape)
+print("columns:", df.columns.tolist())      # check that the last column is the 0/1 class
+print(df.iloc[:, -1].value_counts())
+
+res, model = run_dataset(df)                # label = last column by default
