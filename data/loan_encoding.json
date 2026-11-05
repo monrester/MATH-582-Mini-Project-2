@@ -1,0 +1,31 @@
+{
+  "person_gender": {
+    "female": 0,
+    "male": 1
+  },
+  "person_education": {
+    "High School": 0,
+    "Associate": 1,
+    "Bachelor": 2,
+    "Master": 3,
+    "Doctorate": 4
+  },
+  "person_home_ownership": {
+    "RENT": 0,
+    "OWN": 1,
+    "MORTGAGE": 2,
+    "OTHER": 3
+  },
+  "loan_intent": {
+    "PERSONAL": 0,
+    "EDUCATION": 1,
+    "MEDICAL": 2,
+    "VENTURE": 3,
+    "HOMEIMPROVEMENT": 4,
+    "DEBTCONSOLIDATION": 5
+  },
+  "previous_loan_defaults_on_file": {
+    "No": 0,
+    "Yes": 1
+  }
+}
