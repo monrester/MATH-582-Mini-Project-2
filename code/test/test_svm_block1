@@ -298,7 +298,3 @@ def run_all(out="results", csv=None, label="Class"):
                 display(Image(filename=os.path.join(out, f)))
     except Exception:
         pass
-
-
-if __name__ == "__main__":
-    run_all()
