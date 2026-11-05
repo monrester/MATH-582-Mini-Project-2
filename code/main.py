@@ -1,24 +1,36 @@
 import numpy as np
-import kagglehub
+from pathlib import Path
+
+
 
 def get_data():
-    pass_fail_path = kagglehub.dataset_download("ishanjha100/student-passfail-data")
-    cancer_path = kagglehub.dataset_download("uciml/breast-cancer-wisconsin-data")
-    credit_path = kagglehub.dataset_download("rohitudageri/credit-card-details")
-    loan_path = kagglehub.dataset_download("taweilo/loan-approval-classification-data")
-    airplane_path = kagglehub.dataset_download("threnjen/2019-airline-delays-and-cancellations")
-    bank_path = kagglehub.dataset_download("ritesaluja/bank-note-authentication-uci-data")
+    data_path = Path(__file__).resolve().parent.parent / "data"
+    bank = np.loadtxt(data_path / "bank.csv", delimiter=",", skiprows=1)
+    cancer = np.loadtxt(data_path / "cancer.csv", delimiter=",", skiprows=1)
+    loan = np.loadtxt(data_path / "loan.csv", delimiter=",", skiprows=1)
+    pass_fail = np.loadtxt(data_path / "pass-fail.csv", delimiter=",", skiprows=1)
+
+    datasets = {"bank": bank,
+                "cancer": cancer,
+                "loan": loan,
+                "pass_fail": pass_fail}
+    return datasets
+
 
 
 
 
 # Kernels
+
+#No parameters for linear kernel
 def linear_kernel(X1, X2):
     return X1 @ X2.T
 
+#Degree and coef are the two parameters
 def polynomial_kernel(X1, X2, degree=2, coef=1):
     return (X1 @ X2.T + coef) ** degree
 
+#Gamma is the only parameter
 def rbf_kernel(X1, X2, gamma=1):
     sq1 = np.sum(X1 **2, axis=1).reshape(-1,1)
     sq2 = np.sum(X2 ** 2, axis=1).reshape(-1,1)
@@ -35,8 +47,8 @@ def valid_kernel(K):
 
 
 
-def main()
-
-    pass
+def main():
+    data = get_data()
+    print(data["pass_fail"])
 
 main()
