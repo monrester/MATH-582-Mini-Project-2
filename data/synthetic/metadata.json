@@ -1,0 +1,199 @@
+{
+  "seed": 582,
+  "features": [
+    "x1",
+    "x2"
+  ],
+  "labels": [
+    -1,
+    1
+  ],
+  "preprocessing": "Raw coordinates; fit any scaling on training rows only.",
+  "split_method": "Independent samples; distinct deterministic RNG seeds per dataset/split.",
+  "datasets": {
+    "linear": {
+      "description": "Uniform [-2,2]^2; y=sign(x1+x2); reject |x1+x2|<0.4 for a clear margin.",
+      "splits": {
+        "train": {
+          "seed": 582,
+          "rows": 300,
+          "positive": 173,
+          "negative": 127
+        },
+        "validation": {
+          "seed": 583,
+          "rows": 100,
+          "positive": 47,
+          "negative": 53
+        },
+        "test": {
+          "seed": 584,
+          "rows": 100,
+          "positive": 47,
+          "negative": 53
+        }
+      }
+    },
+    "linear_noisy": {
+      "description": "Uniform [-2,2]^2; y=sign(x1+x2); independently flip each label with probability 0.10.",
+      "splits": {
+        "train": {
+          "seed": 682,
+          "rows": 300,
+          "positive": 163,
+          "negative": 137
+        },
+        "validation": {
+          "seed": 683,
+          "rows": 100,
+          "positive": 40,
+          "negative": 60
+        },
+        "test": {
+          "seed": 684,
+          "rows": 100,
+          "positive": 42,
+          "negative": 58
+        }
+      }
+    },
+    "circles": {
+      "description": "Uniform [-2,2]^2; y=+1 inside radius sqrt(8/pi), otherwise -1; equal class area in expectation.",
+      "splits": {
+        "train": {
+          "seed": 782,
+          "rows": 300,
+          "positive": 153,
+          "negative": 147
+        },
+        "validation": {
+          "seed": 783,
+          "rows": 100,
+          "positive": 46,
+          "negative": 54
+        },
+        "test": {
+          "seed": 784,
+          "rows": 100,
+          "positive": 41,
+          "negative": 59
+        }
+      }
+    },
+    "xor": {
+      "description": "Uniform [-2,2]^2; y=+1 if x1*x2>0, otherwise -1.",
+      "splits": {
+        "train": {
+          "seed": 882,
+          "rows": 300,
+          "positive": 156,
+          "negative": 144
+        },
+        "validation": {
+          "seed": 883,
+          "rows": 100,
+          "positive": 48,
+          "negative": 52
+        },
+        "test": {
+          "seed": 884,
+          "rows": 100,
+          "positive": 49,
+          "negative": 51
+        }
+      }
+    },
+    "linear_imbalanced": {
+      "description": "Same clear-margin rule as linear; retain exactly about 10% positives per split by rejection sampling.",
+      "splits": {
+        "train": {
+          "seed": 982,
+          "rows": 300,
+          "positive": 30,
+          "negative": 270
+        },
+        "validation": {
+          "seed": 983,
+          "rows": 100,
+          "positive": 10,
+          "negative": 90
+        },
+        "test": {
+          "seed": 984,
+          "rows": 100,
+          "positive": 10,
+          "negative": 90
+        }
+      }
+    },
+    "quadratic": {
+      "description": "Uniform [-2,2]^2; y=+1 when x2 >= x1^2-0.5, otherwise -1; degree-2 parabolic boundary.",
+      "splits": {
+        "train": {
+          "seed": 1082,
+          "rows": 300,
+          "positive": 113,
+          "negative": 187
+        },
+        "validation": {
+          "seed": 1083,
+          "rows": 100,
+          "positive": 37,
+          "negative": 63
+        },
+        "test": {
+          "seed": 1084,
+          "rows": 100,
+          "positive": 40,
+          "negative": 60
+        }
+      }
+    },
+    "polynomial_degree4": {
+      "description": "Uniform [-2,2]^2; y=+1 when x2 >= 0.3*x1^4-x1^2+0.5, otherwise -1; degree-4 boundary.",
+      "splits": {
+        "train": {
+          "seed": 1182,
+          "rows": 300,
+          "positive": 141,
+          "negative": 159
+        },
+        "validation": {
+          "seed": 1183,
+          "rows": 100,
+          "positive": 49,
+          "negative": 51
+        },
+        "test": {
+          "seed": 1184,
+          "rows": 100,
+          "positive": 44,
+          "negative": 56
+        }
+      }
+    },
+    "mixed_geometry": {
+      "description": "Uniform [-2,2]^2; y=+1 above x2=0.5*x1 for x1<0 and above x2=x1^2-x1 for x1>=0, otherwise -1; continuous piecewise linear/quadratic boundary.",
+      "splits": {
+        "train": {
+          "seed": 1282,
+          "rows": 300,
+          "positive": 164,
+          "negative": 136
+        },
+        "validation": {
+          "seed": 1283,
+          "rows": 100,
+          "positive": 57,
+          "negative": 43
+        },
+        "test": {
+          "seed": 1284,
+          "rows": 100,
+          "positive": 46,
+          "negative": 54
+        }
+      }
+    }
+  }
+}

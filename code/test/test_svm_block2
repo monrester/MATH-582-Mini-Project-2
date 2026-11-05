@@ -1,0 +1,128 @@
+# ---- Generic binary-classification runner for DualSVM ----
+import numpy as np
+import pandas as pd
+
+
+def _prepare(data, label):
+    """Return numeric feature DataFrame X and label array y (original values)."""
+    if isinstance(data, tuple):
+        X, y = pd.DataFrame(np.asarray(data[0])), np.asarray(data[1]).ravel()
+    else:
+        df = pd.read_csv(data) if isinstance(data, str) else data.copy()
+        label = label if label is not None else df.columns[-1]
+        y = df[label].values
+        X = df.drop(columns=[label])
+    ok = ~pd.isna(y)                                         # drop rows with missing label
+    X, y = X[ok].reset_index(drop=True), y[ok]
+    if len(np.unique(y)) != 2:
+        raise ValueError(f"Label must have exactly 2 classes, found {len(np.unique(y))}: "
+                         f"{np.unique(y)[:10]}. Pass label='column_name' if the label is not the last column.")
+    drop = []
+    for c in X.columns:
+        col = X[c]
+        if not (pd.api.types.is_numeric_dtype(col) or pd.api.types.is_bool_dtype(col)):
+            if col.nunique() > 50:                           # names, ids, free text
+                drop.append(c)
+        elif col.nunique() <= 1:                             # constant column
+            drop.append(c)
+        elif (pd.api.types.is_integer_dtype(col) and col.nunique() == len(col)) or str(c).lower() in ("id", "index", "unnamed: 0"):
+            drop.append(c)                                   # row-id column (unique integers)
+    if drop:
+        print("Dropped columns (ids / free text / constant):", drop)
+    X = pd.get_dummies(X.drop(columns=drop), dummy_na=False).astype(float)   # one-hot categoricals
+    return X, y
+
+
+def run_dataset(data, label=None, max_n=1500, test_size=0.25, Cs=(0.1, 1, 10, 100),
+                class_weight="auto", cv=3, seed=42):
+    """
+    data   : CSV path, DataFrame, or (X, y) tuple. Any two-class label works (0/1, yes/no, ...).
+    label  : label column name (default: last column).
+    max_n  : cap on rows used (dense QP is O(n^2) memory). If the data is larger, ALL minority-class
+             rows are kept and the majority class is subsampled (class ratio changes; printed).
+    class_weight : 'auto' (balanced if minority < 30%), 'balanced', or None.
+    Model selection uses cross-validated balanced accuracy on the training set only;
+    the test set is used once at the end.
+    """
+    from sklearn.impute import SimpleImputer
+    from sklearn.metrics import (balanced_accuracy_score, classification_report, confusion_matrix,
+                                 precision_recall_fscore_support)
+    from sklearn.model_selection import StratifiedKFold, train_test_split
+    from sklearn.preprocessing import StandardScaler
+
+    X, y_raw = _prepare(data, label)
+    classes, counts = np.unique(y_raw, return_counts=True)
+    pos = classes[np.argmin(counts)]                         # positive class = the rarer class
+    y = np.where(y_raw == pos, 1.0, -1.0)
+    print(f"Rows {len(y)}, features {X.shape[1]}.  Positive (+1) = '{pos}' ({(y == 1).mean():.1%}),"
+          f" negative (-1) = '{classes[np.argmax(counts)]}'")
+
+    if len(y) > max_n:                                       # keep all minority, subsample majority
+        rng = np.random.default_rng(seed)
+        ip, ineg = np.where(y == 1)[0], np.where(y == -1)[0]
+        ip = rng.choice(ip, min(len(ip), max_n // 2), replace=False)
+        ineg = rng.choice(ineg, max_n - len(ip), replace=False)
+        keep = np.sort(np.r_[ip, ineg])
+        X, y = X.iloc[keep].reset_index(drop=True), y[keep]
+        print(f"Subsampled to {len(y)} rows (positives now {(y == 1).mean():.1%}).")
+
+    Xtr, Xte, ytr, yte = train_test_split(X.values, y, test_size=test_size, random_state=seed, stratify=y)
+    imp = SimpleImputer(strategy="median").fit(Xtr)          # all statistics from train only
+    Xtr, Xte = imp.transform(Xtr), imp.transform(Xte)
+    sc = StandardScaler().fit(Xtr)
+    d = Xtr.shape[1]
+    Xtr, Xte = sc.transform(Xtr) / np.sqrt(d), sc.transform(Xte) / np.sqrt(d)   # ||x||^2 ~ 1
+    g0 = 1.0 / (d * Xtr.var())                               # 'scale' gamma
+
+    cw = ("balanced" if (ytr == 1).mean() < 0.30 else None) if class_weight == "auto" else class_weight
+    print(f"Train {len(ytr)}, test {len(yte)}, class_weight={cw}\n")
+
+    def grid(k):
+        if k == "linear":
+            return [dict(C=C) for C in Cs]
+        if k == "poly":
+            return [dict(C=C, r=1.0, degree=dg) for C in Cs for dg in (2, 3)]
+        extra = dict(r=0.0) if k == "sigmoid" else {}
+        return [dict(C=C, gamma=g0 * gm, **extra) for C in Cs for gm in (0.25, 1, 4)]
+
+    def fit(k, params, A, b):
+        return DualSVM(k, class_weight=cw, **params).fit(A, b)
+
+    skf = StratifiedKFold(n_splits=min(cv, int((ytr == 1).sum()), int((ytr == -1).sum())),
+                          shuffle=True, random_state=seed)
+    rows, models = [], {}
+    for k, _ in KERNELS:
+        best = (-1, None)
+        for params in grid(k):
+            scores = []
+            for a, b in skf.split(Xtr, ytr):
+                try:
+                    scores.append(balanced_accuracy_score(ytr[b], fit(k, params, Xtr[a], ytr[a]).predict(Xtr[b])))
+                except Exception:                            # solver failure -> treat as bad config
+                    scores.append(-1)
+            if np.mean(scores) > best[0]:
+                best = (np.mean(scores), params)
+        cvscore, params = best
+        m = fit(k, params, Xtr, ytr)
+        pr = m.predict(Xte)
+        p, r, f, _ = precision_recall_fscore_support(yte, pr, pos_label=1, average="binary", zero_division=0)
+        models[k] = (m, pr)
+        rows.append(dict(kernel=k, cv_bal_acc=cvscore, test_acc=m.score(Xte, yte),
+                         test_bal_acc=balanced_accuracy_score(yte, pr), precision=p, recall=r, f1=f,
+                         n_SV=m.n_support_, fit_s=m.fit_time_,
+                         params={a: (round(v, 4) if isinstance(v, float) else v) for a, v in params.items()}))
+    res = pd.DataFrame(rows)
+    with pd.option_context("display.width", 250, "display.max_colwidth", 80):
+        print(res.round(3).to_string(index=False))
+    bk = res.loc[res.cv_bal_acc.idxmax(), "kernel"]          # chosen by CV, not by test
+    print(f"\nBest kernel by cross-validation: {bk}")
+    print(confusion_matrix(yte, models[bk][1]), "  (rows = true [-1, +1], cols = predicted)")
+    print(classification_report(yte, models[bk][1], target_names=["-1", "+1"], digits=3, zero_division=0))
+    return res, models[bk][0]
+
+
+# Examples:
+#   res, model = run_dataset("/content/creditcard.csv", label="Class")
+#   res, model = run_dataset("/content/diabetes.csv")                      # label = last column
+#   res, model = run_dataset(df, label="Survived")                         # a pandas DataFrame
+#   res, model = run_dataset((X, y))                                       # numpy arrays
