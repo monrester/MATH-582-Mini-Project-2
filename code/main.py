@@ -8,7 +8,7 @@ def get_data():
     loan_path = kagglehub.dataset_download("taweilo/loan-approval-classification-data")
     airplane_path = kagglehub.dataset_download("threnjen/2019-airline-delays-and-cancellations")
     bank_path = kagglehub.dataset_download("ritesaluja/bank-note-authentication-uci-data")
-    
+
 
 
 
@@ -32,3 +32,11 @@ def valid_kernel(K):
     symmetric = np.allclose(K, K.T)
     smallest_eig = np.linalg.eigvalsh(K).min()
     return symmetric and smallest_eig > -(1e-8)
+
+
+
+def main()
+
+    pass
+
+main()
